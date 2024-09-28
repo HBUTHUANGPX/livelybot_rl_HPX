@@ -1,0 +1,7 @@
+.vscode
+logs
+videos
+wandb
+**/__pycache__
+
+livelybot_rl_control.egg-info/**

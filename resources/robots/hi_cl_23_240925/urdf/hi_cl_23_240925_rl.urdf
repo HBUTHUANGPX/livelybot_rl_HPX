@@ -379,11 +379,11 @@ For more information, please see http://wiki.ros.org/sw_urdf_exporter
 		</collision>
 	</link>
 	<joint name="r_hip_pitch_joint" type="revolute">
-		<origin xyz="0 -0.02875 -0.06425" rpy="0 -0.25 0" />
+		<origin xyz="0 -0.02875 -0.06425" rpy="0 -0.4 0" />
 		<parent link="loin_yaw_link" />
 		<child link="r_hip_pitch_link" />
 		<axis xyz="0 1 0" />
-		<limit lower="-1.25" upper="1.75" effort="36" velocity="21" />
+		<limit lower="-1.1" upper="1.9" effort="36" velocity="21" />
 	</joint>
 	<link name="r_hip_roll_link">
 		<inertial>
@@ -463,17 +463,17 @@ For more information, please see http://wiki.ros.org/sw_urdf_exporter
 		<collision>
 			<origin xyz="0 0 -0.1" rpy="0 0 0" />
 			<geometry>
-				<box size="0.06 0.06 0.1" />
+				<box size="0.012 0.06 0.1" />
 				<!-- <mesh filename="../meshes/r_calf_link.STL" /> -->
 			</geometry>
 		</collision>
 	</link>
 	<joint name="r_calf_joint" type="revolute">
-		<origin xyz="0 0 -0.10575" rpy="0 0.65 0" />
+		<origin xyz="0 0 -0.10575" rpy="0 0.8 0" />
 		<parent link="r_thigh_link" />
 		<child link="r_calf_link" />
 		<axis xyz="0 1 0" />
-		<limit lower="-0.65" upper="1.65" effort="36" velocity="21" />
+		<limit lower="-0.8" upper="1.5" effort="36" velocity="21" />
 	</joint>
 	<link name="r_ankle_pitch_link">
 		<inertial>
@@ -559,11 +559,11 @@ For more information, please see http://wiki.ros.org/sw_urdf_exporter
 		</collision>
 	</link>
 	<joint name="l_hip_pitch_joint" type="revolute">
-		<origin xyz="0 0.02875 -0.06425" rpy="0 -0.25 0" />
+		<origin xyz="0 0.02875 -0.06425" rpy="0 -0.4 0" />
 		<parent link="loin_yaw_link" />
 		<child link="l_hip_pitch_link" />
 		<axis xyz="0 1 0" />
-		<limit lower="-1.25" upper="1.75" effort="36" velocity="21" />
+		<limit lower="-1.1" upper="1.9" effort="36" velocity="21" />
 	</joint>
 	<link name="l_hip_roll_link">
 		<inertial>
@@ -643,17 +643,17 @@ For more information, please see http://wiki.ros.org/sw_urdf_exporter
 		<collision>
 			<origin xyz="0 0 -0.1" rpy="0 0 0" />
 			<geometry>
-				<box size="0.06 0.06 0.1" />
+				<box size="0.012 0.06 0.1" />
 				<!-- <mesh filename="../meshes/l_calf_link.STL" /> -->
 			</geometry>
 		</collision>
 	</link>
 	<joint name="l_calf_joint" type="revolute">
-		<origin xyz="0 0 -0.10575" rpy="0 0.65 0" />
+		<origin xyz="0 0 -0.10575" rpy="0 0.8 0" />
 		<parent link="l_thigh_link" />
 		<child link="l_calf_link" />
 		<axis xyz="0 1 0" />
-		<limit lower="-0.65" upper="1.65" effort="36" velocity="21" />
+		<limit lower="-0.8" upper="1.5" effort="36" velocity="21" />
 	</joint>
 	<link name="l_ankle_pitch_link">
 		<inertial>

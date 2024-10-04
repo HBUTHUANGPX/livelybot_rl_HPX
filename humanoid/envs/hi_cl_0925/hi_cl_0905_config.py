@@ -38,7 +38,7 @@ import torch
 
 """
 
-feet_height = 0.05
+feet_height = 0.03
 X_bias = -0.0284
 AMR_K = 1
 
@@ -52,11 +52,11 @@ class Hi_Cl_cycle:
         self.default_device = device
         # print("2",self.phase[0])
         self.side = side
-        self.T = torch.tensor(0.36, device=self.default_device)  # 步态周期
+        self.T = torch.tensor(0.3, device=self.default_device)  # 步态周期
         self.dt = 0.01
         self.step = torch.round((self.T / self.dt)).int()
         # print(self.step)
-        self.beta = 0.5  # 站姿相位的比例因子
+        self.beta = 1.0  # 站姿相位的比例因子
         self.T_P_beta = self.T * self.beta
         self.omega = 0.0  # 角速度
         self.lx = 1.0  # 腿长
@@ -340,7 +340,7 @@ class Hi_Cl_0925_Cfg(LeggedRobotCfg):
 
     class domain_rand:
         randomize_friction = True
-        friction_range = [0.1, 2.0]
+        friction_range = [0.1, 1.0]
         randomize_base_mass = True
         amr_K = AMR_K
         added_mass_range = [-1.0 * amr_K, 1.0 * amr_K]
@@ -377,16 +377,20 @@ class Hi_Cl_0925_Cfg(LeggedRobotCfg):
         # if true negative total rewards are clipped at zero (avoids early termination problems)
         only_positive_rewards = True
         max_contact_force = 100  # forces above this value are penalized
-
-        tracking_sigma = 0.25
         soft_dof_vel_limit = 1.0
         soft_torque_limit = 1.0
 
+        tracking_sigma = 10.0
+
+        fcn_up = 1.0 # feet_contact_number
+        fcn_down = -0.3 # feet_contact_number
+        appf_sigma = 100
+        appf_indi = [0]
         class scales:
             # reference motion tracking
-            ref_pitch_joint_pos = 8  # 1.6
-            feet_clearance = 6
-            feet_contact_number = 1.2
+            ref_pitch_joint_pos = 2  # 1.6
+            feet_clearance = 10
+            feet_contact_number = 1
             # gait
             feet_air_time = 1.0
             foot_slip = -0.05
@@ -402,15 +406,15 @@ class Hi_Cl_0925_Cfg(LeggedRobotCfg):
             collision = -1.0
 
             # vel tracking
-            tracking_lin_vel = 1.2
-            tracking_ang_vel = 1.1
+            track_vel_hard = 1
+            tracking_lin_vel = 10
+            tracking_ang_vel = 10
             vel_mismatch_exp = 0.5  # lin_z; ang x,y
             low_speed = 0.2
-            track_vel_hard = 5
             # base pos
             ankle_roll_posture = 0.5
             # roll_joint = 0.5
-            ankle_pitch_posisiton_follow = 5
+            ankle_pitch_posisiton_follow = 2
             orientation = 1.0 * 2
             base_height = 0.5
             base_acc = 0.2
@@ -467,3 +471,4 @@ class Hi_Cl_0925_CfgPPO(LeggedRobotCfgPPO):
 # python scripts/train.py --task=pai_cl_0905_ppo --run_name v1 --headless --num_envs 4096
 # python scripts/play.py --task=pai_cl_0905_ppo --run_name v1
 # python scripts/sim2sim.py --load_model ../logs/Pai_cl_0905_ppo/exported/policies/policy_1.pt
+# python scripts/train.py --task=hi_cl_0925_ppo --run_name v1 --headless --num_envs 4096 --rl_device "cuda:1" --sim_device "cuda:1" --load_run "/home/ai/LD_HuangPx/livelybot_rl/logs/Hi_cl_0925_ppo/Sep30_23-17-33_v1"

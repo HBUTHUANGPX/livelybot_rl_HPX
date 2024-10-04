@@ -47,7 +47,7 @@ from humanoid.algo.ppo import PPO
 
 
 class cmd:
-    vx = 0.3
+    vx = 0.6
     vy = 0.0
     dyaw = 0.0
 
@@ -232,7 +232,8 @@ def run_mujoco(policy, cfg):
                     -cfg.normalization.clip_actions,
                     cfg.normalization.clip_actions,
                 )
-                target_q = action * cfg.control.action_scale
+                target_q = action \
+                     * cfg.control.action_scale
 
                 if count_csv < 500:
                     csv_q = np.zeros(27)
@@ -295,8 +296,8 @@ if __name__ == "__main__":
             decimation = 10
 
         class robot_config:
-            kps = np.ones(12, dtype=np.double) * 80
-            kds = np.ones(12, dtype=np.double) * 0.35
+            kps = np.ones(12, dtype=np.double) * 120
+            kds = np.ones(12, dtype=np.double) * 1.0
             print(kds)
             tau_limit = 80.0 * np.ones(12, dtype=np.double)
 

@@ -149,8 +149,11 @@ class Hi_Cl_0925_FreeEnv(LeggedRobot):
         self.terminated |= torch.any(
             torch.abs(self.projected_gravity[:, 1:2]) > 0.9, dim=1
         )
-
-        self.terminated |= torch.any(self.base_pos[:, 2:3] < 0.25, dim=1)
+        # self.terminated |= torch.any(
+        #     torch.abs(self.projected_gravity[:, 2:3]) > 9.81*0.3, dim=1
+        # )
+        self.terminated |= torch.any(self.base_pos[:, 2:3] < self.cfg.rewards.base_height_target*0.7, dim=1)
+        self.terminated |= torch.any(self.base_pos[:, 2:3] > self.cfg.rewards.base_height_target*1.2, dim=1)
         self.time_out_buf = self.episode_length_buf > self.max_episode_length
         self.reset_buf = self.terminated | self.time_out_buf
 
@@ -251,7 +254,7 @@ class Hi_Cl_0925_FreeEnv(LeggedRobot):
         )
         phase = self.episode_length_buf * self.dt  # 时间点 torch.Size([num_envs])
         vx = torch.clamp(self.commands[:, 0], max=0.57)
-        random_tensor = torch.rand(phase.size(), device=self.device) * self.l_cyc.T
+        random_tensor = torch.randint(0, 2,phase.size(), device=self.device) * self.l_cyc.T/2
         # print(phase)
         self.l_cyc.vx = vx
         self.l_cyc.phase = phase
@@ -490,9 +493,7 @@ class Hi_Cl_0925_FreeEnv(LeggedRobot):
         selected_columns = [0, 3, 4, 6, 9, 10]
         # selected_columns = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
         diff = self.dof_pos[:, selected_columns] - self.ref_dof_pos[:, selected_columns]
-        r = torch.exp(-2 * torch.norm(diff, dim=1)) - 0.2 * torch.norm(
-            diff, dim=1
-        ).clamp(0, 0.5)
+        r = torch.exp(-10 * torch.norm(diff, dim=1))
         return r
 
     def _reward_feet_distance(self):
@@ -544,7 +545,7 @@ class Hi_Cl_0925_FreeEnv(LeggedRobot):
         checking the first contact with the ground after being in the air. The air time is
         limited to a maximum value for reward calculation.
         """
-        contact = self.contact_forces[:, self.feet_indices, 2] > 5.0
+        contact = self.contact_forces[:, self.feet_indices, 2] > 0.01
         # stance_mask = self._get_gait_phase()
         self.contact_filt = torch.logical_or(
             torch.logical_or(contact, self.stance_phase_cycle), self.last_contacts
@@ -561,9 +562,9 @@ class Hi_Cl_0925_FreeEnv(LeggedRobot):
         Calculates a reward based on the number of feet contacts aligning with the gait phase.
         Rewards or penalizes depending on whether the foot contact matches the expected gait phase.
         """
-        contact = self.contact_forces[:, self.feet_indices, 2] > 5.0
+        contact = self.contact_forces[:, self.feet_indices, 2] > 0.1
         # stance_mask = self._get_gait_phase()
-        reward = torch.where(contact == self.stance_phase_cycle, 1, -0.3)
+        reward = torch.where(contact == self.stance_phase_cycle, self.cfg.rewards.fcn_up, self.cfg.rewards.fcn_down)
         return torch.mean(reward, dim=1)
 
     def _reward_orientation(self):
@@ -615,13 +616,14 @@ class Hi_Cl_0925_FreeEnv(LeggedRobot):
         return torch.exp(-yaw_roll * 18)
 
     def _reward_ankle_pitch_posisiton_follow(self):
-        l_err = self.ref_ankle_pitch_pos[:, 0, 0:3] - (
-            self.rigid_state[:, self.feet_indices[0] - 1, 0:3] - self.base_pos[:, 0:3]
+        indi = self.cfg.rewards.appf_indi
+        l_err = self.ref_ankle_pitch_pos[:, 0, indi] - (
+            self.rigid_state[:, self.feet_indices[0] - 1, indi] - self.base_pos[:, indi]
         )
-        r_err = self.ref_ankle_pitch_pos[:, 1, 0:3] - (
-            self.rigid_state[:, self.feet_indices[1] - 1, 0:3] - self.base_pos[:, 0:3]
+        r_err = self.ref_ankle_pitch_pos[:, 1, indi] - (
+            self.rigid_state[:, self.feet_indices[1] - 1, indi] - self.base_pos[:, indi]
         )
-        rew = torch.exp(-(torch.norm(l_err, dim=1) + torch.norm(r_err, dim=1)) * 0.001)
+        rew = torch.exp(-(torch.norm(l_err, dim=1) + torch.norm(r_err, dim=1)) * self.cfg.rewards.appf_sigma)
         return rew
 
     def _reward_base_height(self):

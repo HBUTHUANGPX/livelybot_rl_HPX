@@ -47,10 +47,9 @@ from humanoid.algo.ppo import PPO
 
 
 class cmd:
-    vx = 0.6
-    vy = 0.0
-    dyaw = 0.0
-
+    vx = -0.3
+    vy = 0.
+    dyaw = 0.15
 
 def quaternion_to_euler_array(quat):
     # Ensure quaternion is in the correct format [x, y, z, w]
@@ -199,10 +198,10 @@ def run_mujoco(policy, cfg):
                 eu_ang[eu_ang > math.pi] -= 2 * math.pi
 
                 obs[0, 0] = math.sin(
-                    2 * math.pi * count_lowlevel * cfg.sim_config.dt / 0.64
+                    2 * math.pi * count_lowlevel * cfg.sim_config.dt / 0.5
                 )
                 obs[0, 1] = math.cos(
-                    2 * math.pi * count_lowlevel * cfg.sim_config.dt / 0.64
+                    2 * math.pi * count_lowlevel * cfg.sim_config.dt / 0.5
                 )
                 obs[0, 2] = cmd.vx * cfg.normalization.obs_scales.lin_vel
                 obs[0, 3] = cmd.vy * cfg.normalization.obs_scales.lin_vel
@@ -296,8 +295,8 @@ if __name__ == "__main__":
             decimation = 10
 
         class robot_config:
-            kps = np.ones(12, dtype=np.double) * 40
-            kds = np.ones(12, dtype=np.double) * 0.25
+            kps = np.ones(12, dtype=np.double) * 50
+            kds = np.ones(12, dtype=np.double) * 0.45
             print(kds)
             tau_limit = 80.0 * np.ones(12, dtype=np.double)
 

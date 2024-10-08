@@ -1,3 +1,7 @@
+# **作出的修改见飞书：**
+
+https://lingdongfangcheng.feishu.cn/wiki/Hge3wb3p5i3qErkAPKIcAFWongd?from=from_copylink
+
 # livelybot_rl_control
 
 This repository provides a reinforcement learning environment used to train HighTorque’s Legged Robot using NVIDIA’s Isaac Gym. Livelybot_rl_control also integrates a sim-to-sim framework from Isaac Gym to Mujoco that allows users to verify the trained policies in different physical simulations to ensure the robustness and generalization of the policies.
@@ -17,8 +21,6 @@ This repository provides a reinforcement learning environment used to train High
 6. Install livelybot_rl_control:
    - Clone this repository.
    - `cd livelybot_rl_control && pip install -e .`
-
-
 
 ## Usage Guide
 
@@ -46,12 +48,13 @@ python scripts/sim2sim.py --load_model /path/to/logs/Pai_ppo/exported/policies/p
 #### 1. Default Tasks
 
 - **pai_ppo**
-   - Purpose: Baseline, PPO policy, Multi-frame low-level control
-   - Observation Space: Variable $(47 \times H)$ dimensions, where $H$ is the number of frames
-   - $[O_{t-H} ... O_t]$
-   - Privileged Information: $73$ dimensions
+  - Purpose: Baseline, PPO policy, Multi-frame low-level control
+  - Observation Space: Variable $(47 \times H)$ dimensions, where $H$ is the number of frames
+  - $[O_{t-H} ... O_t]$
+  - Privileged Information: $73$ dimensions
 
 #### 2. PPO Policy
+
 - **Training Command**: For training the PPO policy, execute:
   ```
   python humanoid/scripts/train.py --task=humanoid_ppo --load_run log_file_path --name run_name
@@ -70,12 +73,14 @@ python scripts/sim2sim.py --load_model /path/to/logs/Pai_ppo/exported/policies/p
   ```
 
 #### 4. Parameters
+
 - **CPU and GPU Usage**: To run simulations on the CPU, set both `--sim_device=cpu` and `--rl_device=cpu`. For GPU operations, specify `--sim_device=cuda:{0,1,2...}` and `--rl_device={0,1,2...}` accordingly. Please note that `CUDA_VISIBLE_DEVICES` is not applicable, and it's essential to match the `--sim_device` and `--rl_device` settings.
 - **Headless Operation**: Include `--headless` for operations without rendering.
 - **Rendering Control**: Press 'v' to toggle rendering during training.
 - **Policy Location**: Trained policies are saved in `humanoid/logs/<experiment_name>/<date_time>_<run_name>/model_<iteration>.pt`.
 
 #### 5. Command-Line Arguments
+
 For RL training, please refer to `humanoid/utils/helpers.py#L161`.
 For the sim-to-sim process, please refer to `humanoid/scripts/sim2sim.py#L169`.
 
@@ -86,24 +91,22 @@ For the sim-to-sim process, please refer to `humanoid/scripts/sim2sim.py#L169`.
 3. Non-zero reward scales specified in `cfg` contribute a function of the corresponding name to the sum-total reward.
 4. Tasks must be registered with `task_registry.register(name, EnvClass, EnvConfig, TrainConfig)`. Registration may occur within `envs/__init__.py`, or outside of this repository.
 
-
-## Add a new environment 
+## Add a new environment
 
 The base environment `legged_robot` constructs a rough terrain locomotion task. The corresponding configuration does not specify a robot asset (URDF/ MJCF) and no reward scales.
 
 1. If you need to add a new environment, create a new folder in the `envs/` directory with a configuration file named `<your_env>_config.py`. The new configuration should inherit from existing environment configurations.
 2. If proposing a new robot:
-    - Insert the corresponding assets in the `resources/` folder.
-    - In the `cfg` file, set the path to the asset, define body names, default_joint_positions, and PD gains. Specify the desired `train_cfg` and the environment's name (python class).
-    - In the `train_cfg`, set the `experiment_name` and `run_name`.
+   - Insert the corresponding assets in the `resources/` folder.
+   - In the `cfg` file, set the path to the asset, define body names, default_joint_positions, and PD gains. Specify the desired `train_cfg` and the environment's name (python class).
+   - In the `train_cfg`, set the `experiment_name` and `run_name`.
 3. If needed, create your environment in `<your_env>.py`. Inherit from existing environments, override desired functions and/or add your reward functions.
 4. Register your environment in `humanoid/envs/__init__.py`.
 5. Modify or tune other parameters in your `cfg` or `cfg_train` as per requirements. To remove the reward, set its scale to zero. Avoid modifying the parameters of other environments!
-6. If you want a new robot/environment to perform sim2sim, you may need to modify `humanoid/scripts/sim2sim.py`: 
-    - Check the joint mapping of the robot between MJCF and URDF.
-    - Change the initial joint position of the robot according to your trained policy.
+6. If you want a new robot/environment to perform sim2sim, you may need to modify `humanoid/scripts/sim2sim.py`:
+   - Check the joint mapping of the robot between MJCF and URDF.
+   - Change the initial joint position of the robot according to your trained policy.
 
 ## Acknowledgment
 
 The implementation of livelybot_rl_control relies on resources from [legged_gym](https://github.com/leggedrobotics/legged_gym)  and [humanoid-gym](https://github.com/roboterax/humanoid-gym) projects.
-

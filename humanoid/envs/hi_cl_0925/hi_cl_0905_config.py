@@ -42,21 +42,18 @@ feet_height = 0.03
 X_bias = -0.0284
 AMR_K = 1
 
-
 class Hi_Cl_cycle:
-    # default_device = "cpu"
-    # default_device = "cuda:0"
 
     def __init__(self, phase: torch.Tensor, side="l", device: str = "cuda:0") -> None:
         self.phase: torch.Tensor = phase
         self.default_device = device
         # print("2",self.phase[0])
         self.side = side
-        self.T = torch.tensor(0.3, device=self.default_device)  # 步态周期
+        self.T = torch.tensor(0.35, device=self.default_device)  # 步态周期
         self.dt = 0.01
         self.step = torch.round((self.T / self.dt)).int()
         # print(self.step)
-        self.beta = 1.0  # 站姿相位的比例因子
+        self.beta = 0.0  # 站姿相位的比例因子
         self.T_P_beta = self.T * self.beta
         self.omega = 0.0  # 角速度
         self.lx = 1.0  # 腿长

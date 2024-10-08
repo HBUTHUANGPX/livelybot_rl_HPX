@@ -38,27 +38,25 @@ def plot_3D_xz_with_phase(ax, phase, x_toe, z_toe, _label):
     ax.set_ylabel("X Position")
     ax.set_zlabel("Z Position")
 
-
-class Pai_Cl_cycle:
-    # default_device = "cpu"
-    default_device = "cuda:0"
-
-    def __init__(self, phase, side="l") -> None:
+feet_height = 0.03
+X_bias = -0.0284
+class Hi_Cl_cycle:
+    def __init__(self, phase: torch.Tensor, side="l", device: str = "cuda:0") -> None:
         self.phase: torch.Tensor = phase
+        self.default_device = device
         # print("2",self.phase[0])
         self.side = side
         self.T = torch.tensor(0.3, device=self.default_device)  # 步态周期
         self.dt = 0.01
         self.step = torch.round((self.T / self.dt)).int()
         # print(self.step)
-        self.beta = 0.5  # 站姿相位的比例因子
+        self.beta = 1.0  # 站姿相位的比例因子
         self.T_P_beta = self.T * self.beta
         self.omega = 0.0  # 角速度
         self.lx = 1.0  # 腿长
         self.k_i = 1.0  # 常数
-        self.h = 0.03  # 抬高高度
-        self.h_f = self.h / 10  # 抬高高度
-        self.x_bias = 0.04
+        self.h = feet_height  # 抬高高度
+        self.x_bias = X_bias
         self.ref_dof_pos = torch.zeros(
             (self.phase.size(dim=0), 6), device=self.default_device
         )
@@ -98,8 +96,8 @@ class Pai_Cl_cycle:
         self._l1_2_2 = 2 * self._l1 * self._l2
 
         self.compute_dict()
-        self.broadcaster = tf2_ros.TransformBroadcaster()
-        self.tfs = TransformStamped()
+        # self.broadcaster = tf2_ros.TransformBroadcaster()
+        # self.tfs = TransformStamped()
 
     def compute(self):
         self.init_pos()
@@ -121,12 +119,13 @@ class Pai_Cl_cycle:
         self.j0 = self.ref_dof_pos[:, 0]
         self.j3 = self.ref_dof_pos[:, 3]
         self.y = torch.full_like(self.j0, 0.0975)  # y 分量是常数
+        self.r_i_y = self.y
 
     def fresh_joint_angle_with_ref(self):
         # 计算 x, y, z, w 分量
         self.x = -0.2 * (torch.sin(self.j0) + torch.sin(self.j0 + self.j3))
-        self.z = -0.2 * torch.cos(self.j0) - 0.2 * torch.cos(self.j0 + self.j3) - 0.2585
-
+        self.z = -0.2 * torch.cos(self.j0) - 0.2 * torch.cos(self.j0 + self.j3)
+    
     def compute_p_i(self):
         phi_i = (self.phase % self.T) / self.T * 2 * torch.pi
         return phi_i
@@ -160,7 +159,7 @@ class Pai_Cl_cycle:
 
     def compute_dict(self):
         phase = torch.arange(
-            0, self.T, step=dt, device=self.default_device, dtype=torch.float
+            0, self.T, step=self.dt, device=self.default_device, dtype=torch.float
         )
         phyi = (phase % self.T) / self.T * 2 * torch.pi
         phyi[phyi > torch.pi] -= 2 * torch.pi
@@ -176,12 +175,13 @@ class Pai_Cl_cycle:
         )
         self.derta_x = self.T_P_beta * self.dict_poly_x_y
         self.derta_z = self.h * self.dict_poly_z
-        self.derta_z[phyi < 0] = self.h_f * self.dict_poly_z[phyi < 0]
+        self.derta_z[phyi < 0] = 0
         # plot_2D(phyi.cpu(), self.dict_poly_x_y.cpu())
 
     def compute_r_i(self):
         self.r_i_x = self.x + self.vx * self.T_P_beta * self.poly_x_y - self.x_bias
-        self.r_i_z = self.z + self.h * self.poly_z
+        self.add_z = self.h * self.poly_z
+        self.r_i_z = self.z + self.add_z
         self.r_i_z[self.phyi < 0] = self.z[self.phyi < 0]
         # plot_2D(self.phase.clone().cpu(), self.r_i_z.clone().cpu())
 
@@ -198,6 +198,13 @@ class Pai_Cl_cycle:
         self.ref_dof_pos[:, 3] = sita2  # - 0.65
         self.ref_dof_pos[:, 4] = -sita2 + sita1  # + 0.4
 
+
+class test(Hi_Cl_cycle):
+    def __init__(self, phase, side="l"):
+        super().__init__(phase,side)
+        self.broadcaster = tf2_ros.TransformBroadcaster()
+        self.tfs = TransformStamped()
+    
     def pub_tf(self, num):
         self.tfs.header.stamp = rospy.Time.now()
         # print(
@@ -256,13 +263,14 @@ class Pai_Cl_cycle:
         self.broadcaster.sendTransform(self.tfs)
 
 
+
 if __name__ == "__main__":
     rospy.init_node("joint_state_publisher")
     nn = 1000
     # 创建一个 Profiler 对象
-    profiler = Profiler()
+    # profiler = Profiler()
     # 开始性能分析
-    profiler.start()
+    # profiler.start()
     num_envs = 100
     episode_length_s = 24
     dt = 0.01
@@ -273,68 +281,12 @@ if __name__ == "__main__":
         0, num_envs, step=1, device=default_device, dtype=torch.long
     )
     phase = episode_length_buf * 0.01
-    l_cyc = Pai_Cl_cycle(phase, "l")
+    l_cyc = test(phase, "l")
     l_cyc.vx *= 0.4
-    r_cyc = Pai_Cl_cycle(phase, "r")
+    r_cyc = test(phase, "r")
     r_cyc.vx *= 0.4
     ref_dof_pos = torch.zeros(num_envs, 12, device=default_device)
-    rate = rospy.Rate(33)
-
-    # l_cyc.compute()
-    # plot_2D(l_cyc.phase.cpu(), l_cyc.indices.cpu())
-    # print(l_cyc.indices)
-    # plot_2D(l_cyc.phase.cpu(), l_cyc.float_indices.cpu())
-    # print(l_cyc.phase)
-    # t_len = torch.arange(0, l_cyc.T, step=dt, device=default_device, dtype=torch.float)
-    # print(t_len)
-    # plot_2D(l_cyc.phase.cpu(),l_cyc.poly_z.cpu())
-    # plot_2D(l_cyc.phase.cpu(),l_cyc.pi.cpu())
-    # plot_2D(l_cyc.phase.cpu(),l_cyc.phyi.cpu())
-    # fig = plt.figure(figsize=(10, 6))
-    # ax = fig.add_subplot(111, projection="3d")
-    # plot_3D_xz_with_phase(
-    #     ax, l_cyc.phase.cpu(), l_cyc.pi.cpu(), l_cyc.phyi.cpu(), "left"
-    # )
-    # r_cyc.compute()
-    # plot_2D(r_cyc.phyi.cpu(),r_cyc.pi.cpu())
-    # l_cyc.pub_tf(0)
-    # r_cyc.pub_tf(0)
-    # a = l_cyc.ref_dof_pos
-    # print("l_cyc.ref_dof_pos: ",
-    #     a[0, 0].cpu(),
-    #     a[0, 3].cpu(),
-    #     a[0, 4].cpu(),
-    # )
-    # plot_2D(
-    #     l_cyc.phase.cpu(),
-    #     l_cyc.ref_dof_pos[:, 0].cpu(),
-    #     ylabel="hip_pitch",
-    #     _label="hip_pitch",
-    # )
-    # plot_2D(
-    #     l_cyc.phase.cpu(),
-    #     l_cyc.ref_dof_pos[:, 3].cpu(),
-    #     ylabel="calf_pitch",
-    #     _label="calf_pitch",
-    # )
-    # plot_2D(
-    #     l_cyc.phase.cpu(),
-    #     l_cyc.ref_dof_pos[:, 4].cpu(),
-    #     ylabel="ankle_pitch",
-    #     _label="ankle_pitch",
-    # )
-
-    # fig = plt.figure(figsize=(10, 6))
-    # ax = fig.add_subplot(111, projection="3d")
-    # plot_3D_xz_with_phase(
-    #     ax, l_cyc.phase.cpu(), l_cyc.r_i_x.cpu(), l_cyc.r_i_z.cpu(), "left"
-    # )
-
-    # fig = plt.figure(figsize=(10, 6))
-    # ax = fig.add_subplot(111, projection="3d")
-    # plot_3D_xz_with_phase(
-    #     ax, r_cyc.phase.cpu(), r_cyc.r_i_x.cpu(), r_cyc.r_i_z.cpu(), "right"
-    # )
+    rate = rospy.Rate(int(1/dt/3))
 
     plt.show()
     while not rospy.is_shutdown():
@@ -361,8 +313,8 @@ if __name__ == "__main__":
             break
         rate.sleep()
     # 停止性能分析
-    profiler.stop()
-    print(profiler.output_text(unicode=True, color=True))
+    # profiler.stop()
+    # print(profiler.output_text(unicode=True, color=True))
 
-    # 生成 HTML 报告
-    profiler.open_in_browser()
+    # # 生成 HTML 报告
+    # profiler.open_in_browser()
